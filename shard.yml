@@ -1,0 +1,13 @@
+name: eph_jpl_cr
+version: 0.1.2
+
+authors:
+  - soya_daizu <soya_daizu@protonmail.com>
+
+crystal: 1.1.1
+
+license: MIT
+
+targets:
+  sample:
+    main: sample/sample.cr
