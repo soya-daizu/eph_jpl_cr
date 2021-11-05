@@ -8,6 +8,7 @@ module EphJplCr
     MSG_ERR_7    = "JD is invalid!"
     MSG_ERR_8    = "KM flag is invalid!"
     MSG_ERR_9    = "This library is supporting only DE430!"
+    MSG_ERR_10   = "Arguments are not set yet!"
     EPOCH_PERIOD = 2287184.5..2688976.5
     KSIZE        = 2036
     RECL         = 4

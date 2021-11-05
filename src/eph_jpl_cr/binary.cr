@@ -1,56 +1,41 @@
 module EphJplCr
-  class Binary
-    alias BinaryData = NamedTuple(
-      ttl: String,
-      cnams: Array(String),
-      sss: Array(Float64),
-      ncon: UInt32,
-      au: Float64,
-      emrat: Float64,
-      numde: UInt32,
-      ipts: Array(Array(UInt32)),
-      cvals: Array(Float64),
-      jdepoc: Float64,
-      coeffs: Array(Array(Array(Array(Float64)))),
-      jds_cheb: Array(Float64)
-    )
+  struct Binary
+    getter ttl : String
+    getter cnams : Array(String)
+    getter sss : Array(Float64)
+    getter ncon : UInt32
+    getter au : Float64
+    getter emrat : Float64
+    getter numde : UInt32
+    getter ipts : Array(Array(UInt32))
+    getter cvals : Array(Float64)
+    getter jdepoc : Float64
+    getter coeffs : Array(Array(Array(Array(Float64))))
+    getter jds_cheb : Array(Float64)
 
-    def initialize(@bin_path : String, @target : Int32, @center : Int32, @jd : Float64)
+    def initialize(@file : File, @target : Int32, @center : Int32, @jd : Float64)
       @pos = 0
-    end
-    
-    def get_binary
-      begin
-        file   = File.open(@bin_path, "rb")
-        ttl    = get_ttl(file)            # TTL
-        cnams  = get_cnams(file)          # CNAM
-        sss    = get_sss(file)            # SS
-        ncon   = get_ncon(file)           # NCON
-        au     = get_au(file)             # AU
-        emrat  = get_emrat(file)          # EMRAT
-        ipts   = get_ipts(file)           # IPT
-        numde  = get_numde(file)          # NUMDE
-        ipts  << get_ipts_13(file)        # IPT(Month's libration)
-        cnams += get_cnams_2(file, ncon)  # CNAM(>400)
-        cvals  = get_cvals(file, ncon)    # CVAL（定数値）
-        jdepoc = cvals[4]                 # JDEPOC
-        coeffs, jds_cheb = get_coeffs(file, sss, ipts)  # Coefficient, JDs(for Chebyshev polynomial)
-        return {
-          ttl: ttl, cnams: cnams, sss: sss, ncon: ncon, au: au, emrat: emrat,
-          numde: numde, ipts: ipts, cvals: cvals, jdepoc: jdepoc,
-          coeffs: coeffs, jds_cheb: jds_cheb
-        }
-      rescue e
-        raise e
-      end
+      @ttl    = get_ttl            # TTL
+      @cnams  = get_cnams          # CNAM
+      @sss    = get_sss            # SS
+      @ncon   = get_ncon           # NCON
+      @au     = get_au             # AU
+      @emrat  = get_emrat          # EMRAT
+      @ipts   = get_ipts           # IPT
+      @numde  = get_numde          # NUMDE
+      @ipts  << get_ipts_13        # IPT(Month's libration)
+      @cnams += get_cnams_2(ncon)  # CNAM(>400)
+      @cvals  = get_cvals(ncon)    # CVAL（定数値）
+      @jdepoc = cvals[4]           # JDEPOC
+      @coeffs, @jds_cheb = get_coeffs(sss, ipts)  # Coefficient, JDs(for Chebyshev polynomial)
     end
 
-    private def get_ttl(file : File)
+    private def get_ttl
       recl = 84
 
       begin
         ttl = (0..2).map do |i|
-          file.read_at(@pos + recl * i, recl) do |io|
+          @file.read_at(@pos + recl * i, recl) do |io|
             io.read_string(recl).strip
           end
         end.join("\n")
@@ -61,12 +46,12 @@ module EphJplCr
       end
     end
 
-    private def get_cnams(file : File)
+    private def get_cnams
       recl = 6
 
       begin
         cnams = (0..399).map do |i|
-          file.read_at(@pos + recl * i, recl) do |io|
+          @file.read_at(@pos + recl * i, recl) do |io|
             io.read_string(recl).strip
           end
         end
@@ -77,12 +62,12 @@ module EphJplCr
       end
     end
 
-    private def get_sss(file : File)
+    private def get_sss
       recl = 8
 
       begin
         sss = (0..2).map do |i|
-          file.read_at(@pos + recl * i, recl) do |io|
+          @file.read_at(@pos + recl * i, recl) do |io|
             io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
           end
         end
@@ -93,11 +78,11 @@ module EphJplCr
       end
     end
 
-    private def get_ncon(file : File)
+    private def get_ncon
       recl = 4
 
       begin
-        ncon = file.read_at(@pos, recl) do |io|
+        ncon = @file.read_at(@pos, recl) do |io|
           io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
         end
         @pos += recl
@@ -107,11 +92,11 @@ module EphJplCr
       end
     end
 
-    private def get_au(file : File)
+    private def get_au
       recl = 8
 
       begin
-        au = file.read_at(@pos, recl) do |io|
+        au = @file.read_at(@pos, recl) do |io|
           io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
         end
         @pos += recl
@@ -121,11 +106,11 @@ module EphJplCr
       end
     end
 
-    private def get_emrat(file : File)
+    private def get_emrat
       recl = 8
 
       begin
-        emrat = file.read_at(@pos, recl) do |io|
+        emrat = @file.read_at(@pos, recl) do |io|
           io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
         end
         @pos += recl
@@ -135,13 +120,13 @@ module EphJplCr
       end
     end
 
-    private def get_ipts(file : File)
+    private def get_ipts
       recl = 4
 
       begin
         ipts = (0..11).map do |i|
           ary = (0..2).map do |j|
-            file.read_at(@pos + recl * j, recl) do |io|
+            @file.read_at(@pos + recl * j, recl) do |io|
               io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
             end
           end
@@ -154,11 +139,11 @@ module EphJplCr
       end
     end
 
-    private def get_numde(file : File)
+    private def get_numde
       recl = 4
 
       begin
-        numde = file.read_at(@pos, recl) do |io|
+        numde = @file.read_at(@pos, recl) do |io|
           io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
         end
         raise Const::MSG_ERR_8 unless numde == 430
@@ -169,12 +154,12 @@ module EphJplCr
       end
     end
 
-    private def get_ipts_13(file : File)
+    private def get_ipts_13
       recl = 4
 
       begin
         ipts = (0..2).map do |i|
-          file.read_at(@pos + recl * i, recl) do |io|
+          @file.read_at(@pos + recl * i, recl) do |io|
             io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
           end
         end
@@ -185,12 +170,12 @@ module EphJplCr
       end
     end
 
-    private def get_cnams_2(file : File, ncon : UInt32)
+    private def get_cnams_2(ncon : UInt32)
       recl = 6
 
       begin
         cnams = (0..(ncon - 400 - 1)).map do |i|
-          file.read_at(@pos + recl * i, recl) do |io|
+          @file.read_at(@pos + recl * i, recl) do |io|
             io.read_string(recl).strip
           end
         end
@@ -201,13 +186,13 @@ module EphJplCr
       end
     end
 
-    private def get_cvals(file : File, ncon : UInt32)
+    private def get_cvals(ncon : UInt32)
       pos = Const::KSIZE * Const::RECL
       recl = 8
 
       begin
         return (0..ncon - 1).map do |i|
-          file.read_at(pos + recl * i, recl) do |io|
+          @file.read_at(pos + recl * i, recl) do |io|
             io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
           end
         end
@@ -216,7 +201,7 @@ module EphJplCr
       end
     end
 
-    private def get_coeffs(file : File, sss : Array(Float64), ipts : Array(Array(UInt32)))
+    private def get_coeffs(sss : Array(Float64), ipts : Array(Array(UInt32)))
       idx = ((@jd - sss[0]) / sss[2]).to_i  # レコードインデックス
       pos = Const::KSIZE * Const::RECL * (2 + idx)
       recl = 8
@@ -224,7 +209,7 @@ module EphJplCr
 
       begin
         items = (0..(Const::KSIZE / 2) - 1).map do |i|
-          file.read_at(pos + recl * i, recl) do |io|
+          @file.read_at(pos + recl * i, recl) do |io|
             io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
           end
         end
