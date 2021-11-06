@@ -13,7 +13,7 @@ module EphJplCr
     getter coeffs : Array(Array(Array(Array(Float64))))
     getter jds_cheb : Array(Float64)
 
-    def initialize(@file : File, @target : Int32, @center : Int32, @jd : Float64)
+    def initialize(@bin_io : IO, @target : Int32, @center : Int32, @jd : Float64)
       @pos = 0
       @ttl    = get_ttl            # TTL
       @cnams  = get_cnams          # CNAM
@@ -35,7 +35,7 @@ module EphJplCr
 
       begin
         ttl = (0..2).map do |i|
-          @file.read_at(@pos + recl * i, recl) do |io|
+          @bin_io.read_at(@pos + recl * i, recl) do |io|
             io.read_string(recl).strip
           end
         end.join("\n")
@@ -51,7 +51,7 @@ module EphJplCr
 
       begin
         cnams = (0..399).map do |i|
-          @file.read_at(@pos + recl * i, recl) do |io|
+          @bin_io.read_at(@pos + recl * i, recl) do |io|
             io.read_string(recl).strip
           end
         end
@@ -67,7 +67,7 @@ module EphJplCr
 
       begin
         sss = (0..2).map do |i|
-          @file.read_at(@pos + recl * i, recl) do |io|
+          @bin_io.read_at(@pos + recl * i, recl) do |io|
             io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
           end
         end
@@ -82,7 +82,7 @@ module EphJplCr
       recl = 4
 
       begin
-        ncon = @file.read_at(@pos, recl) do |io|
+        ncon = @bin_io.read_at(@pos, recl) do |io|
           io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
         end
         @pos += recl
@@ -96,7 +96,7 @@ module EphJplCr
       recl = 8
 
       begin
-        au = @file.read_at(@pos, recl) do |io|
+        au = @bin_io.read_at(@pos, recl) do |io|
           io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
         end
         @pos += recl
@@ -110,7 +110,7 @@ module EphJplCr
       recl = 8
 
       begin
-        emrat = @file.read_at(@pos, recl) do |io|
+        emrat = @bin_io.read_at(@pos, recl) do |io|
           io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
         end
         @pos += recl
@@ -126,7 +126,7 @@ module EphJplCr
       begin
         ipts = (0..11).map do |i|
           ary = (0..2).map do |j|
-            @file.read_at(@pos + recl * j, recl) do |io|
+            @bin_io.read_at(@pos + recl * j, recl) do |io|
               io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
             end
           end
@@ -143,7 +143,7 @@ module EphJplCr
       recl = 4
 
       begin
-        numde = @file.read_at(@pos, recl) do |io|
+        numde = @bin_io.read_at(@pos, recl) do |io|
           io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
         end
         raise Const::MSG_ERR_8 unless numde == 430
@@ -159,7 +159,7 @@ module EphJplCr
 
       begin
         ipts = (0..2).map do |i|
-          @file.read_at(@pos + recl * i, recl) do |io|
+          @bin_io.read_at(@pos + recl * i, recl) do |io|
             io.read_bytes(UInt32, IO::ByteFormat::LittleEndian)
           end
         end
@@ -175,7 +175,7 @@ module EphJplCr
 
       begin
         cnams = (0..(ncon - 400 - 1)).map do |i|
-          @file.read_at(@pos + recl * i, recl) do |io|
+          @bin_io.read_at(@pos + recl * i, recl) do |io|
             io.read_string(recl).strip
           end
         end
@@ -192,7 +192,7 @@ module EphJplCr
 
       begin
         return (0..ncon - 1).map do |i|
-          @file.read_at(pos + recl * i, recl) do |io|
+          @bin_io.read_at(pos + recl * i, recl) do |io|
             io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
           end
         end
@@ -209,7 +209,7 @@ module EphJplCr
 
       begin
         items = (0..(Const::KSIZE / 2) - 1).map do |i|
-          @file.read_at(pos + recl * i, recl) do |io|
+          @bin_io.read_at(pos + recl * i, recl) do |io|
             io.read_bytes(Float64, IO::ByteFormat::LittleEndian)
           end
         end
