@@ -21,17 +21,10 @@ See the original libary for more detail.
 ```crystal
 require "eph_jpl_cr"
 
-obj = EphJplCr.new("/path/to/JPLEPH", 11, 3, 2457465.5)
-
-p obj.target       #=> Target atronomical body No. (Integer)
-p obj.target_name  #=> Target atronomical body name (String)
-p obj.center       #=> Center atronomical body No. (Integer)
-p obj.center_name  #=> Center atronomical body name (String)
-p obj.jd           #=> Julian Day (Float)
-p obj.km           #=> KM flag (true: km unit, false: AU unit) (Boolean)
-p obj.unit         #=> UNIT of positions and velocities (String)
-p obj.bin          #=> Acquired data from binary file (Hash)
-p obj.calc         #=> [x, y, z-position, x, y, z-velocity]
+session = EphJplCr::Session.new("/path/to/JPLEPH")
+# Target celestial body num, center celestial body num, julian day
+session.set_args(11, 3, 2457465.5)
+session.calc #=> [x, y, z-position, x, y, z-velocity]
 ```
 
 ## Contributing
