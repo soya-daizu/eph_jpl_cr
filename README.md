@@ -21,7 +21,10 @@ See the original libary for more detail.
 ```crystal
 require "eph_jpl_cr"
 
-session = EphJplCr::Session.new("/path/to/JPLEPH")
+session = EphJplCr::Session.new(
+  bin_path: "/path/to/JPLEPH",
+  use_memory_io: true # load all binary data to memory, uses more memory (~400MB) but significantly faster lookup
+)
 # Target celestial body num, center celestial body num, julian day
 session.set_args(11, 3, 2457465.5)
 session.calc #=> [x, y, z-position, x, y, z-velocity]
